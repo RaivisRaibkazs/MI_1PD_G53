@@ -9,10 +9,10 @@ class NumberGame:
         master.geometry("600x500")
         master.configure(bg='#D6F5BB')
 
-        # Spēles starta parametri (uzdevumā rakstīts, ka banka sākas ar 1)
+        # Spēles starta parametri (uzdevumā rakstīts, ka banka sākas ar 0)
         self.sequence = []
         self.points = 0
-        self.bank = 1
+        self.bank = 0
         self.first_player = 1
         self.player_turn = 1
 
@@ -73,7 +73,7 @@ class NumberGame:
 
         self.bank_label = tk.Label(
             self.score_frame, 
-            text="Banka: 1", 
+            text="Banka: 0", 
             font=('Arial', 12), 
             bg='#D6F5BB'
         )
@@ -118,100 +118,90 @@ class NumberGame:
         self.ai_move_label.pack(pady=5)
 
     def start_game(self):
-        # Vaicājums lai iegūtu spēles sākuma skaitļus
-        length = simpledialog.askinteger(
-            "Spēles izveide", 
-            "Ievadiet virknes garumu (15-20):", 
-            minvalue=15, 
-            maxvalue=20
-        )
+    # Speletajs ievada virknes garumu
+        length = simpledialog.askinteger("Spēles izveide", "Ievadiet virknes garumu (15-20):", minvalue=15, maxvalue=20)
         if length is None:
             return
 
-        first_player = simpledialog.askinteger(
-            "Spēles izveide", 
-            "Kas sāk? (1 = Spēlētājs, 2 = Dators):", 
-            minvalue=1, 
-            maxvalue=2
-        )
+        first_player = simpledialog.askinteger("Spēles izveide", "Kas sāk? (1 = Spēlētājs, 2 = Dators):", minvalue=1, maxvalue=2)
         if first_player is None:
             return
 
-        # Sākam spēli
+        # Speletajs izvelas algoritmu
+        algorithm_choice = simpledialog.askinteger("AI Algoritms", "Izvēlieties AI algoritmu: (1 = Minimax, 2 = Alpha-Beta Pruning)", minvalue=1, maxvalue=2)
+        if algorithm_choice is None:
+            return
+        self.use_alpha_beta = (algorithm_choice == 2)
+
+        # inicializejam spēli
         self.sequence = self.generate_sequence(length)
         self.points = 0
-        self.bank = 1
+        self.bank = 0
         self.first_player = first_player
         self.player_turn = first_player
 
-        # Attēlojam skaitļu virkni pēc spēlētāja gājiena
+        # atjaunojam UI
         self.sequence_frame.pack(pady=10)
-        
-        # Notīram datora gājiena rezultāta paziņojumu (to kas sarkans)
         self.ai_move_label.config(text="")
-        
-        # atjaunojam UI logu
         self.update_ui()
-        
-        # Ja spēli sāk spēlētājs, izveidojam ciparu pogas
+
         if self.player_turn == 1:
             self.create_number_buttons()
-        # Ja spēli sāk dators, piešķiram tam gājienu
         else:
             self.ai_turn()
 
     def generate_sequence(self, length):
-        return [random.choice([1, 2, 3, 4]) for _ in range(length)]
+            return [random.choice([1, 2, 3, 4]) for _ in range(length)]
 
     def update_ui(self):
-        # Atjaunojam ciparu virkni
-        self.sequence_display.config(text=' '.join(map(str, self.sequence)))
-        
-        # Atjaunojam punktu un bankas rezultātus
-        self.points_label.config(text=f"Punkti: {self.points}")
-        self.bank_label.config(text=f"Banka: {self.bank}")
-        
-        # Parādam kuram spēlētājam ir gājiens
-        self.log_label.config(text=f"{'Spēlētāja' if self.player_turn == 1 else 'Datora'} gājiens")
+            # Atjaunojam ciparu virkni
+            self.sequence_display.config(text=' '.join(map(str, self.sequence)))
+            
+            # Atjaunojam punktu un bankas rezultātus
+            self.points_label.config(text=f"Punkti: {self.points}")
+            self.bank_label.config(text=f"Banka: {self.bank}")
+            
+            # Parādam kuram spēlētājam ir gājiens
+            self.log_label.config(text=f"{'Spēlētāja' if self.player_turn == 1 else 'Datora'} gājiens")
 
     def player_move(self, number):
-        if number not in self.sequence:
-            messagebox.showerror("Nepareizs gājiens", "Izvēlaties ciparu kas ir virknē.")
-            return
+            if number not in self.sequence:
+                messagebox.showerror("Nepareizs gājiens", "Izvēlaties ciparu kas ir virknē.")
+                return
 
-        # Izņemam ciparu no virknes
-        self.sequence.remove(number)
+            # Izņemam ciparu no virknes
+            self.sequence.remove(number)
 
-        # Apstrādājam ciparus kurus var sadalīt
-        if number == 2:
-            response = messagebox.askyesno("Darbības izvēle", "Vai vēlaties sadalīt '2' uz '1' un '1'?")
-            if response:
-                self.bank += 1
-                self.sequence += [1, 1]
+            # Apstrādājam ciparus kurus var sadalīt
+            if number == 2:
+                response = messagebox.askyesno("Darbības izvēle", "Vai vēlaties sadalīt '2' uz '1' un '1'?")
+                if response:
+                    self.bank += 1
+                    self.sequence += [1]
+                else:
+                    self.points += 2
+            elif number == 4:
+                response = messagebox.askyesno("Darbības izvēle", "Vai vēlaties sadalīt '4' uz '2' un '2'?")
+                if response:
+                    self.points += 2
+                    self.sequence += [2]
+                else:
+                    self.points += 4
             else:
-                self.points += 2
-        elif number == 4:
-            response = messagebox.askyesno("Darbības izvēle", "Vai vēlaties sadalīt '4' uz '2' un '2'?")
-            if response:
-                self.points += 2
-                self.sequence += [2, 2]
-            else:
-                self.points += 4
-        else:
-            self.points += number
+                self.points += number
 
-        # Notīram datora paziņojumu kad pienāk spēlētāja gājiens
-        self.ai_move_label.config(text="")
+            # Notīram datora paziņojumu kad pienāk spēlētāja gājiens
+            self.ai_move_label.config(text="")
 
-        # Pārbaudam vai spēle ir beigusies
-        if not self.sequence:
-            self.end_game()
-            return
+            # Pārbaudam vai spēle ir beigusies
+            if not self.sequence:
+                self.end_game()
+                return
 
-        # Pārejam uz datora gājienu
-        self.player_turn = 2
-        self.update_ui()
-        self.master.after(1000, self.ai_turn)
+            # Pārejam uz datora gājienu
+            self.player_turn = 2
+            self.update_ui()
+            self.master.after(1000, self.ai_turn)
 
     def ai_turn(self):
         if not self.sequence:
@@ -293,6 +283,65 @@ class NumberGame:
             return 2 if first_player == 1 else 1
         return "Neizšķirts"
 
+    def minimax_alpha_beta(self, sequence, points, bank, is_ai_turn, first_player, depth, alpha, beta):
+        if not sequence or depth == 0:
+            return self.evaluate_game(points, bank, first_player)
+        
+        if is_ai_turn:
+            best_score = float('-inf')
+            for i in range(len(sequence)):
+                new_sequence = sequence[:i] + sequence[i+1:]
+                num = sequence[i]
+            
+                score = self.minimax_alpha_beta(new_sequence, points + num, bank, not is_ai_turn, first_player, depth - 1, alpha, beta)
+                best_score = max(best_score, score)
+                alpha = max(alpha, score)
+                if beta <= alpha:
+                    break  # nogriež beta
+                
+                if num == 2:
+                    split_sequence = new_sequence + [1]
+                    score = self.minimax_alpha_beta(split_sequence, points, bank + 1, not is_ai_turn, first_player, depth - 1, alpha, beta)
+                    best_score = max(best_score, score)
+                    alpha = max(alpha, score)
+                    if beta <= alpha:
+                        break  # nogriež beta
+                elif num == 4:
+                    split_sequence = new_sequence + [2]
+                    score = self.minimax_alpha_beta(split_sequence, points + 2, bank, not is_ai_turn, first_player, depth - 1, alpha, beta)
+                    best_score = max(best_score, score)
+                    alpha = max(alpha, score)
+                    if beta <= alpha:
+                        break  # nogriež beta
+            return best_score
+        else:
+            best_score = float('inf')
+            for i in range(len(sequence)):
+                new_sequence = sequence[:i] + sequence[i+1:]
+                num = sequence[i]
+                
+                score = self.minimax_alpha_beta(new_sequence, points + num, bank, not is_ai_turn, first_player, depth - 1, alpha, beta)
+                best_score = min(best_score, score)
+                beta = min(beta, score)
+                if beta <= alpha:
+                    break  # nogriež alfa
+                
+                if num == 2:
+                    split_sequence = new_sequence + [1]
+                    score = self.minimax_alpha_beta(split_sequence, points + 2, bank, not is_ai_turn, first_player, depth - 1, alpha, beta)
+                    best_score = min(best_score, score)
+                    beta = min(beta, score)
+                    if beta <= alpha:
+                        break  # nogriež alfa
+                elif num == 4:
+                    split_sequence = new_sequence + [2]
+                    score = self.minimax_alpha_beta(split_sequence, points + 2, bank, not is_ai_turn, first_player, depth - 1, alpha, beta)
+                    best_score = min(best_score, score)
+                    beta = min(beta, score)
+                    if beta <= alpha:
+                        break  # nogriež alfa
+            return best_score
+
     def minimax(self, sequence, points, bank, is_ai_turn, first_player, depth):
         if not sequence or depth == 0:
             return self.evaluate_game(points, bank, first_player)
@@ -332,40 +381,53 @@ class NumberGame:
 
     def evaluate_game(self, points, bank, first_player):
         ai_player = 2 if first_player == 1 else 1
+
         player_wins = points % 2 == 0 and bank % 2 == 0
         ai_wins = points % 2 == 1 and bank % 2 == 1
-        
-        if (first_player == 2 and player_wins) or (first_player == 1 and ai_wins):
-            return 1  # Dators uzvar
-        elif (first_player == 1 and player_wins) or (first_player == 2 and ai_wins):
-            return -1  # Spēlētājs uzvar
-        return 0  # Neizšķirts
+
+        if player_wins:
+            return first_player  # Atgriež spēlētāja numuru, ja viņš uzvar
+        elif ai_wins:
+            return ai_player  # Atgriež AI spēlētāja numuru, ja viņš uzvar
+        else:
+            return 0  # Neizšķirts vai spēle turpinās
 
     def ai_move(self, sequence, points, bank, first_player):
         best_score = float('-inf')
         best_move = None
-        depth = 4  # minimax algoritma dziļums kuru pārmeklē dators (tas skatās 4 gājienus uz priekšu. uzliekot ciparu lielāku, dators pārāk ilgi domā, piemēram, dziļums 7 pilnībā uzkarina spēli)
-        
+        depth = 4  # AI pārmeklēšanas dziļums
+
         for i in range(len(sequence)):
             new_sequence = sequence[:i] + sequence[i+1:]
             num = sequence[i]
-            
-            score = self.minimax(new_sequence, points + num, bank, False, first_player, depth)
+
+            if self.use_alpha_beta:
+                score = self.minimax_alpha_beta(new_sequence, points + num, bank, False, first_player, depth, float('-inf'), float('inf'))
+            else:
+                score = self.minimax(new_sequence, points + num, bank, False, first_player, depth)
+
             if score > best_score:
                 best_score = score
                 best_move = (num, False)
-            
+
             if num == 2:
-                score = self.minimax(new_sequence, points, bank + 1, False, first_player, depth)
+                if self.use_alpha_beta:
+                    score = self.minimax_alpha_beta(new_sequence, points, bank + 1, False, first_player, depth, float('-inf'), float('inf'))
+                else:
+                    score = self.minimax(new_sequence, points, bank + 1, False, first_player, depth)
                 if score > best_score:
                     best_score = score
                     best_move = (num, True)
+
             elif num == 4:
-                score = self.minimax(new_sequence, points + 2, bank, False, first_player, depth)
+                if self.use_alpha_beta:
+                    score = self.minimax_alpha_beta(new_sequence, points + 2, bank, False, first_player, depth, float('-inf'), float('inf'))
+                else:
+                    score = self.minimax(new_sequence, points + 2, bank, False, first_player, depth)
                 if score > best_score:
                     best_score = score
                     best_move = (num, True)
-        
+
         return best_move
 
 def main():
